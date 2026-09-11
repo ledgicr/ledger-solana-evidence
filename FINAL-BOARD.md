@@ -1,36 +1,38 @@
-# Final board — generated from `gh api`, 2026-09-11 01:06 UTC
+# Final board — generated from `gh api`, 2026-09-11 13:59 UTC
 
 Regenerate with the commands at the bottom. Treat the timestamp as this table's
 expiry.
 
 | Item | State (from API) | Owner |
 |---|---|---|
-| solana-keychain#301 @ `b1e50bfe` | **Maintainer holds the branch.** Jo rebased all 15 of our commits onto current main and added two: a −640-line comment prune and a fix commit (host-path redaction, unpinned version test, envelope note on the `SolanaSigner` trait). Both reviewed and agreed; one factual note raised on a pruned comment. AI disclosure now filled in properly and **both hygiene checks green**, no `ai-unreviewed` label. Checks **59 pass / 1 fail**, the one red being `fork-live-gate`, pre-cleared. review=CHANGES_REQUESTED, not yet re-reviewed | **Solana — Jo's move** |
-| pay-kit#300 @ `e8c81134` | review=CHANGES_REQUESTED, mergeable_state=**dirty** — conflicts with #308, merged 2026-09-05. Rebased locally onto `c143bfab`, one commit, 968 tests green; **not pushed**, sequencing is the maintainer's call | Solana (sequencing), Ledger (rebase ready) |
-| pay-kit#309 @ `b935639d` | review=APPROVED by EfeDurmaz16, mergeable_state=unstable. Still unmerged | Solana |
-| agave#15100 | labels=[community, need:merge-assist], ci-gate=**pending**, review=REVIEW_REQUIRED. Unchanged since 2026-09-05 | **Anza — no named owner** |
-| solana-keychain#306 | TypeScript/DMK signing design. `b1e50bfe` pre-answers part of it by documenting the envelope deviation on the trait | Solana (roadmap call) |
-| solana-keychain#307 | Two attached Ledgers cannot be used concurrently | Unassigned |
+| solana-keychain#301 @ `b1e50bfe` | **APPROVED by dev-jodee** 2026-09-11T12:54:49Z. External live tests **passed** (run 34600158104, all four languages). **Not merged**, and blocked by one red required check: `fork-live-gate` fails because the marker comment it reads was posted as `fork-external-live-pass:` with **no head SHA appended**, so the gate reports "Missing marker for fork PR head SHA b1e50bfe…". That is their workflow dropping `head_sha`, not anything about this branch. `reviewDecision=REVIEW_REQUIRED` because `amilz` is still a requested reviewer | **Solana — one CI action away from merge** |
+| pay-kit#300 @ `e8c81134` | review=CHANGES_REQUESTED, mergeable_state=**dirty**. Rebase prepared locally onto `c143bfab`, one commit, 968 tests green; **not pushed** | Solana (sequencing) |
+| pay-kit#309 @ `b935639d` | review=APPROVED, unmerged | Solana |
+| agave#15100 | ci-gate=**pending**, no named owner, unchanged since 2026-09-05. **Now the highest-leverage item** — see below | **Anza** |
+| solana-keychain#306 / #307 | Filed, open | Solana / unassigned |
 
-## Notes
+## What changed: a Gen5 now works through pay-kit
 
-**Everything on #301 is now with Jo.** Nineteen review threads answered, both
-his commits reviewed and agreed in a posted reply, disclosure completed. The
-branch is shared: pushed to only on Ian's explicit go, never force-pushed.
+Previously impossible. pay-kit resolves `solana-remote-wallet` **4.0.x**
+(forced by `solana-pubkey 4.1.0` / `solana-signature 3.3.0`), and 4.0.3 carries
+no Nano Gen5 product ids. Patching in 4.2.2 does not help — cargo refuses it as
+unusable in the graph.
 
-**The AI-disclosure gate is satisfied on the merits, not just mechanically.**
-The `Tool and extent` field was the template placeholder until 2026-09-11; it
-now states which tools were used, what they drafted, and how the work was
-verified — hardware on a physical Gen5, mutation-checked tests, independent
-re-audit before each push.
+A **~40-line backport onto 4.0.3** does work: the 33 Gen5 product ids, one line
+registering them, and the `config.len()` fix from agave#15100. It resolves,
+compiles, and the device enumerates and derives addresses through pay-kit's own
+x402 client path.
 
-**agave#15100 remains the only item with no named owner**, and still blocks
-Ledger support in pay-kit for every device running Solana app 1.16.0.
+**This makes agave#15100 the highest-leverage open item.** A 4.0.x point release
+carrying those ids plus the length fix would make every current Ledger work for
+every pay.sh user with no pay-kit dependency change at all. The alternative —
+pay-kit migrating to the Solana 4.x line — is much larger and is not scheduled.
+The backport route was named as an option on 2026-09-01; it is now demonstrated.
 
 ## Commands
 
 ```bash
-gh pr view N --repo OWNER/REPO --json headRefOid,reviewDecision,mergeable,mergeStateStatus
+gh pr view N --repo OWNER/REPO --json headRefOid,reviewDecision,mergedAt,mergeStateStatus
 gh pr checks N --repo OWNER/REPO
-gh api repos/OWNER/REPO/actions/runs --jq '[.workflow_runs[]|select(.name=="PR hygiene")]|sort_by(.created_at)|last'
+gh api repos/OWNER/REPO/commits/SHA/check-runs --jq '.check_runs[] | {name, conclusion}'
 ```
